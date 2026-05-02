@@ -1,7 +1,10 @@
+from __future__ import annotations
+
 import asyncio
 import hmac
 import logging
 from contextlib import asynccontextmanager
+from typing import Optional
 
 from fastapi import FastAPI, HTTPException, Header, Request as FastAPIRequest
 from fastapi.middleware.cors import CORSMiddleware
@@ -9,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from flowboard.config import WS_HOST
 from flowboard.db import get_session, init_db
 from flowboard.db.models import Request
-from flowboard.routes import activity, auth, boards, chat, edges, llm, media, nodes, plans, projects, prompt, upload, vision
+from flowboard.routes import boards, edges, media, nodes, projects, prompt, upload, vision
 from flowboard.routes import requests as requests_route
 from flowboard.services.flow_client import flow_client
 from flowboard.services.ws_server import run_ws_server
@@ -85,18 +88,13 @@ app.add_middleware(
 app.include_router(boards.router)
 app.include_router(nodes.router)
 app.include_router(edges.router)
-app.include_router(chat.router)
 app.include_router(projects.router)
 app.include_router(requests_route.router)
 app.include_router(media.bytes_router)
 app.include_router(media.api_router)
 app.include_router(upload.router)
-app.include_router(plans.router)
 app.include_router(vision.router)
 app.include_router(prompt.router)
-app.include_router(auth.router)
-app.include_router(llm.router)
-app.include_router(activity.router)
 
 
 @app.get("/api/health")
@@ -111,7 +109,7 @@ def health() -> dict:
 @app.post("/api/ext/callback")
 async def ext_callback(
     body: FastAPIRequest,
-    x_callback_secret: str | None = Header(default=None, alias="X-Callback-Secret"),
+    x_callback_secret: Optional[str] = Header(default=None, alias="X-Callback-Secret"),
 ) -> dict:
     """HTTP callback for the extension to deliver API responses."""
     if not x_callback_secret or not hmac.compare_digest(

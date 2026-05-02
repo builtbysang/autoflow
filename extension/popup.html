@@ -2,137 +2,174 @@
 <html>
 <head>
   <meta charset="utf-8">
-  <title>Flowboard Bridge</title>
+  <title>Autoflow Bridge</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      width: 260px;
-      background: #14161c;
-      color: #e6e8ec;
-      font-family: system-ui, sans-serif;
-      font-size: 12px;
+      width: 280px;
+      background: #1c1b18;
+      color: #faf9f5;
+      font-family: "Anthropic Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-size: 13px;
       line-height: 1.5;
-      margin: 0;
-      padding: 0;
     }
 
+    /* ── Header ── */
     header {
       display: flex;
-      align-items: baseline;
-      gap: 6px;
-      padding: 12px 12px 8px;
-      border-bottom: 1px solid #23263a;
+      align-items: center;
+      gap: 8px;
+      padding: 14px 14px 12px;
+      border-bottom: 1px solid #242320;
     }
 
+    .logo {
+      width: 22px;
+      height: 22px;
+      object-fit: contain;
+      opacity: 0.9;
+    }
+
+    .header-text { flex: 1; }
+
     .header-title {
-      font-size: 14px;
-      font-weight: 700;
-      color: #e6e8ec;
+      font-size: 13px;
+      font-weight: 600;
+      color: #faf9f5;
+      letter-spacing: -0.01em;
     }
 
     .header-version {
-      font-size: 11px;
-      color: #6b7280;
+      font-size: 10px;
+      color: #5a5750;
+      margin-left: 5px;
     }
 
-    .section {
-      padding: 8px 12px;
-      border-bottom: 1px solid #23263a;
+    .header-subtitle {
+      font-size: 10px;
+      color: #5a5750;
+      margin-top: 1px;
+    }
+
+    /* ── Status pill ── */
+    .status-pill {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 5px;
+      padding: 3px 8px;
+      border-radius: 8px;
+      font-size: 11px;
+      font-weight: 500;
+      background: #242320;
+      color: #5a5750;
     }
 
-    .section-label {
-      color: #6b7280;
-      min-width: 52px;
+    .status-pill .dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #5a5750;
       flex-shrink: 0;
     }
 
-    .section-value {
-      color: #e6e8ec;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
+    .status-pill.connected { background: #162418; color: #6ee7b7; }
+    .status-pill.connected .dot { background: #22c55e; }
+    .status-pill.running   { background: #261e08; color: #fbbf24; }
+    .status-pill.running   .dot { background: #f59e0b; }
+    .status-pill.offline   { background: #242320; color: #5a5750; }
+
+    /* ── Body ── */
+    .body { padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; }
+
+    .row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 4px 0;
     }
 
-    .dot-connected { color: #6ee7b7; }
-    .dot-running   { color: #f5b301; }
-    .dot-offline   { color: #6b7280; }
+    .row-label { color: #5a5750; font-size: 12px; }
+    .row-value { color: #b8b3aa; font-size: 12px; text-align: right; }
+    .row-value.error { color: #f87171; }
 
-    .error-value {
-      color: #ef4444;
-      font-size: 11px;
-    }
-
+    /* ── Actions ── */
     .actions {
-      padding: 10px 12px;
+      padding: 10px 14px 14px;
       display: flex;
       flex-direction: column;
       gap: 6px;
+      border-top: 1px solid #242320;
     }
 
     button {
       width: 100%;
-      padding: 6px 10px;
-      background: #23263a;
-      color: #a0a8c0;
-      border: 1px solid #2e3250;
+      padding: 7px 12px;
+      background: transparent;
+      color: #c8c3ba;
+      border: 1px solid #6a6660;
       border-radius: 8px;
-      font-family: system-ui, sans-serif;
+      font-family: "Anthropic Sans", system-ui, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       font-size: 12px;
+      font-weight: 500;
       cursor: pointer;
-      text-align: left;
-      transition: background 0.12s, color 0.12s;
+      text-align: center;
+      transition: background 0.1s, color 0.1s, border-color 0.1s;
     }
 
-    button:hover {
-      background: #2a2e4a;
-      color: #e6e8ec;
-    }
+    button:hover { background: #242220; color: #faf9f5; border-color: #4a4740; }
 
-    button#btn-toggle.reconnect {
-      color: #6ee7b7;
-      border-color: #1e3a32;
+    button.primary {
+      background: #faf9f5;
+      color: #141413;
+      border-color: #faf9f5;
     }
+    button.primary:hover { background: #c8c5be; border-color: #c8c5be; }
 
-    button#btn-toggle.disconnect {
-      color: #ef4444;
-      border-color: #3a1e1e;
-    }
+    button.danger { background: transparent; color: #f87171; border: none; }
+    button.danger:hover { background: #1e1210; color: #fca5a5; }
+
+    button.success { background: transparent; color: #6ee7b7; border: none; }
+    button.success:hover { background: #101e14; color: #a7f3d0; }
   </style>
 </head>
 <body>
+
   <header>
-    <span class="header-title">Flowboard Bridge</span>
-    <span class="header-version">v0.0.2</span>
+    <img class="logo" id="logo-img" src="icons/icon-light-32.png" alt="">
+    <div class="header-text">
+      <span class="header-title">Autoflow Bridge</span>
+      <span class="header-version">v0.0.4</span>
+    </div>
+    <div class="status-pill offline" id="status-pill">
+      <span class="dot"></span>
+      <span id="status-text">Offline</span>
+    </div>
   </header>
 
-  <div class="section">
-    <span class="section-label">Status</span>
-    <span class="section-value" id="status-dot">○ offline</span>
-  </div>
-
-  <div class="section">
-    <span class="section-label">Token</span>
-    <span class="section-value" id="token-row">none</span>
-  </div>
-
-  <div class="section">
-    <span class="section-label">Requests</span>
-    <span class="section-value" id="stats-row">0 · ✓ 0 · ✗ 0</span>
-  </div>
-
-  <div class="section" id="error-section" style="display:none">
-    <span class="section-label">Error</span>
-    <span class="section-value error-value" id="error-row"></span>
+  <div class="body">
+    <div class="row">
+      <span class="row-label">Token</span>
+      <span class="row-value" id="token-row">none</span>
+    </div>
+    <div class="row">
+      <span class="row-label">Requests</span>
+      <span class="row-value" id="stats-row">0</span>
+    </div>
+    <div class="row">
+      <span class="row-label">Success / Failed</span>
+      <span class="row-value" id="stats-sf">✓ 0 &nbsp; ✗ 0</span>
+    </div>
+    <div class="row" id="error-section" style="display:none">
+      <span class="row-label">Last error</span>
+      <span class="row-value error" id="error-row"></span>
+    </div>
   </div>
 
   <div class="actions">
-    <button id="btn-flow-tab">Open Flow tab</button>
-    <button id="btn-refresh">Refresh token</button>
-    <button id="btn-toggle" class="disconnect">Disconnect</button>
+    <button class="primary" id="btn-flow-tab">Open Google Flow</button>
+    <button id="btn-refresh">Refresh Token</button>
+    <button id="btn-toggle" class="danger">Disconnect</button>
   </div>
 
   <script src="popup.js"></script>

@@ -1,17 +1,29 @@
-"""Multi-LLM provider layer.
-
-Public surface (consumed by ``prompt_synth``, ``vision``, ``planner``):
-
-- ``run_llm(feature, prompt, ...)`` — feature-routed dispatch
-- ``LLMProvider`` — Protocol every provider implements
-- ``LLMError`` — single error type the registry + providers raise
-
-The HTTP routes layer (``routes/llm.py``) additionally imports ``secrets``
-and the per-provider classes from ``registry`` for status / test endpoints.
-"""
+"""LLM layer — routes through the local claude CLI (uses your Claude subscription)."""
 from __future__ import annotations
 
-from .base import LLMError, LLMProvider
-from .registry import get_provider, list_providers, run_llm
+from typing import Optional
 
-__all__ = ["LLMError", "LLMProvider", "get_provider", "list_providers", "run_llm"]
+from flowboard.services.claude_cli import ClaudeCliError, run_claude
+
+
+class LLMError(RuntimeError):
+    pass
+
+
+async def run_llm(
+    role: str,
+    user_prompt: str,
+    *,
+    system_prompt: Optional[str] = None,
+    attachments: Optional[list[str]] = None,
+    timeout: float = 90.0,
+) -> str:
+    try:
+        return await run_claude(
+            user_prompt,
+            system_prompt=system_prompt,
+            attachments=attachments,
+            timeout=timeout,
+        )
+    except ClaudeCliError as exc:
+        raise LLMError(str(exc)) from exc

@@ -20,8 +20,7 @@ from sqlmodel import select
 from flowboard.db import get_session
 from flowboard.db.models import Edge, Node
 from flowboard.services.activity import record_activity
-from flowboard.services.llm import run_llm
-from flowboard.services.llm.base import LLMError
+from flowboard.services.llm import LLMError, run_llm
 
 logger = logging.getLogger(__name__)
 

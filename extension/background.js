@@ -8,6 +8,7 @@
 const AGENT_WS_URL  = 'ws://127.0.0.1:9222';
 const CALLBACK_URL  = 'http://127.0.0.1:8100/api/ext/callback';
 
+
 let ws               = null;
 let flowKey          = null;
 let callbackSecret   = null; // Auth secret received from agent on WS connect
@@ -615,14 +616,48 @@ async function handleTrpcRequest(msg) {
   }
 }
 
+// ─── Icon with status dot ───────────────────────────────────
+
+const _iconCache = {};
+
+async function drawIconWithDot(dotColor) {
+  const size = 32;
+  const dotR = 4; // dot radius in pixels — adjust here to resize
+  try {
+    if (!_iconCache[size]) {
+      const resp = await fetch(chrome.runtime.getURL(`icons/icon-light-${size}.png`));
+      const blob = await resp.blob();
+      const bitmap = await createImageBitmap(blob);
+      _iconCache[size] = bitmap;
+    }
+    const canvas = new OffscreenCanvas(size, size);
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(_iconCache[size], 0, 0, size, size);
+    // draw dot bottom-right corner
+    const x = size - dotR - 2;
+    const y = size - dotR - 2;
+    ctx.beginPath();
+    ctx.arc(x, y, dotR, 0, Math.PI * 2);
+    ctx.fillStyle = dotColor;
+    ctx.fill();
+    // thin white border so dot is visible on any background
+    ctx.lineWidth = 1.5;
+    ctx.strokeStyle = 'rgba(255,255,255,0.8)';
+    ctx.stroke();
+    const imageData = ctx.getImageData(0, 0, size, size);
+    chrome.action.setIcon({ imageData: { [size]: imageData } });
+  } catch (e) {
+    // fallback: no dot
+  }
+}
+
 // ─── State & Badge ──────────────────────────────────────────
 
 function setState(newState) {
   state = newState;
-  const badges = { idle: '●', running: '▶', off: '○' };
-  const colors  = { idle: '#22c55e', running: '#f5b301', off: '#6b7280' };
-  chrome.action.setBadgeText({ text: badges[newState] || '' });
-  chrome.action.setBadgeBackgroundColor({ color: colors[newState] || '#000' });
+  chrome.action.setBadgeText({ text: '' });
+  const dotColor = { idle: '#22c55e', running: '#f5b301', off: '#6b7280' }[newState] || '#6b7280';
+  drawIconWithDot(dotColor);
   broadcastStatus();
 }
 

@@ -24,8 +24,7 @@ from typing import Optional
 
 from flowboard.services import media as media_service
 from flowboard.services.activity import record_activity
-from flowboard.services.llm import run_llm
-from flowboard.services.llm.base import LLMError
+from flowboard.services.llm import LLMError, run_llm
 
 logger = logging.getLogger(__name__)
 

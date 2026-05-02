@@ -1,6 +1,5 @@
 /**
- * Flowboard Bridge — Popup UI
- * Polls background status every 1.5 s and renders it.
+ * Autoflow Bridge — Popup UI
  */
 
 let _manualDisconnect = false;
@@ -8,9 +7,9 @@ let _manualDisconnect = false;
 function formatTokenAge(ms) {
   if (ms === null || ms === undefined) return 'none';
   const s = Math.floor(ms / 1000);
-  if (s < 60)   return `captured ${s} s ago`;
-  if (s < 3600) return `captured ${Math.floor(s / 60)} m ago`;
-  return `captured ${Math.floor(s / 3600)} h ago`;
+  if (s < 60)   return `${s}s ago`;
+  if (s < 3600) return `${Math.floor(s / 60)}m ago`;
+  return `${Math.floor(s / 3600)}h ago`;
 }
 
 function render(status) {
@@ -18,17 +17,18 @@ function render(status) {
 
   _manualDisconnect = status.manualDisconnect;
 
-  // Status dot
-  const dotEl = document.getElementById('status-dot');
+  // Status pill
+  const pill = document.getElementById('status-pill');
+  const txt  = document.getElementById('status-text');
   if (status.manualDisconnect || !status.connected) {
-    dotEl.className = 'section-value dot-offline';
-    dotEl.textContent = '○ offline';
+    pill.className = 'status-pill offline';
+    txt.textContent = 'Offline';
   } else if (status.state === 'running') {
-    dotEl.className = 'section-value dot-running';
-    dotEl.textContent = '▶ running';
+    pill.className = 'status-pill running';
+    txt.textContent = 'Running';
   } else {
-    dotEl.className = 'section-value dot-connected';
-    dotEl.textContent = '● connected';
+    pill.className = 'status-pill connected';
+    txt.textContent = 'Connected';
   }
 
   // Token
@@ -37,15 +37,15 @@ function render(status) {
 
   // Stats
   const m = status.metrics || {};
-  document.getElementById('stats-row').textContent =
-    `${m.requestCount || 0} · ✓ ${m.successCount || 0} · ✗ ${m.failedCount || 0}`;
+  document.getElementById('stats-row').textContent = m.requestCount || 0;
+  document.getElementById('stats-sf').innerHTML =
+    `✓ ${m.successCount || 0} &nbsp; ✗ ${m.failedCount || 0}`;
 
   // Error
   const errSection = document.getElementById('error-section');
-  const errRow     = document.getElementById('error-row');
   if (m.lastError) {
     errSection.style.display = 'flex';
-    errRow.textContent = m.lastError;
+    document.getElementById('error-row').textContent = m.lastError;
   } else {
     errSection.style.display = 'none';
   }
@@ -54,10 +54,10 @@ function render(status) {
   const btn = document.getElementById('btn-toggle');
   if (status.manualDisconnect) {
     btn.textContent = 'Reconnect';
-    btn.className   = 'reconnect';
+    btn.className   = 'success';
   } else {
     btn.textContent = 'Disconnect';
-    btn.className   = 'disconnect';
+    btn.className   = 'danger';
   }
 }
 
@@ -67,6 +67,24 @@ function fetchStatus() {
     render(reply);
   });
 }
+
+// Sync icon to system color scheme
+function syncIcon() {
+  const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const theme = isDark ? 'light' : 'dark';
+  const path = {
+    '16':  `icons/icon-${theme}-16.png`,
+    '32':  `icons/icon-${theme}-32.png`,
+    '48':  `icons/icon-${theme}-48.png`,
+    '128': `icons/icon-${theme}-128.png`,
+  };
+  chrome.action.setIcon({ path });
+  const logo = document.getElementById('logo-img');
+  if (logo) logo.src = `icons/icon-${theme}-32.png`;
+}
+
+syncIcon();
+window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', syncIcon);
 
 // Initial fetch + poll
 fetchStatus();
