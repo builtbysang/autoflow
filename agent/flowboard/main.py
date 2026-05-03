@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from flowboard.db import get_session, init_db
 from flowboard.db.models import Request
-from flowboard.routes import boards, edges, media, nodes, projects, prompt, upload, vision
+from flowboard.routes import media, upload
 from flowboard.routes import requests as requests_route
 from flowboard.services.flow_client import flow_client
 from flowboard.services.ws_server import fastapi_ext_ws, run_ws_server
@@ -20,7 +20,6 @@ from flowboard.services.ws_server import fastapi_ext_ws, run_ws_server
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
-# True when running on Railway (or any cloud env that sets DATABASE_URL).
 _CLOUD = bool(os.getenv("DATABASE_URL") or os.getenv("RAILWAY_ENVIRONMENT"))
 
 
@@ -73,7 +72,7 @@ async def lifespan(app: FastAPI):
         logger.info("flowboard agent stopped")
 
 
-app = FastAPI(title="Flowboard Agent", version="0.0.2", lifespan=lifespan)
+app = FastAPI(title="Autoflow Agent", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -83,21 +82,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(boards.router)
-app.include_router(nodes.router)
-app.include_router(edges.router)
-app.include_router(projects.router)
 app.include_router(requests_route.router)
 app.include_router(media.bytes_router)
 app.include_router(media.api_router)
 app.include_router(upload.router)
-app.include_router(vision.router)
-app.include_router(prompt.router)
 
 
 @app.websocket("/ws/ext")
 async def ext_ws(websocket: WebSocket):
-    """Extension WebSocket endpoint — used in cloud mode (Railway)."""
     await fastapi_ext_ws(websocket)
 
 

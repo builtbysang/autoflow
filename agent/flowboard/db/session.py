@@ -6,7 +6,6 @@ from sqlmodel import Session, SQLModel, create_engine
 from flowboard.config import DATABASE_URL, DB_PATH
 
 if DATABASE_URL:
-    # Railway supplies postgres://...; SQLAlchemy needs postgresql://
     _url = DATABASE_URL.replace("postgres://", "postgresql://", 1) if DATABASE_URL.startswith("postgres://") else DATABASE_URL
     engine = create_engine(_url, echo=False)
 else:
@@ -24,27 +23,7 @@ else:
 
 
 def init_db() -> None:
-    from sqlalchemy import inspect
-
-    from flowboard.db import models
-
-    if not DATABASE_URL:
-        # SQLite-only migrations for existing local databases.
-        with engine.connect() as conn:
-            insp = inspect(conn)
-            if insp.has_table("asset"):
-                cols = {c["name"] for c in insp.get_columns("asset")}
-                if "url" not in cols:
-                    models.Asset.__table__.drop(conn, checkfirst=True)
-                    conn.commit()
-            if insp.has_table("edge"):
-                edge_cols = {c["name"] for c in insp.get_columns("edge")}
-                if "source_variant_idx" not in edge_cols:
-                    conn.exec_driver_sql(
-                        "ALTER TABLE edge ADD COLUMN source_variant_idx INTEGER"
-                    )
-                    conn.commit()
-
+    from flowboard.db import models  # noqa: F401
     SQLModel.metadata.create_all(engine)
 
 
