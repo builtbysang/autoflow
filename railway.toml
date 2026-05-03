@@ -1,9 +1,8 @@
 [build]
-builder = "nixpacks"
-buildCommand = "cd agent && pip install -e ."
+builder = "dockerfile"
+dockerfilePath = "Dockerfile"
 
 [deploy]
-startCommand = "cd agent && uvicorn flowboard.main:app --host 0.0.0.0 --port $PORT"
 healthcheckPath = "/api/health"
 healthcheckTimeout = 30
 restartPolicyType = "on_failure"
