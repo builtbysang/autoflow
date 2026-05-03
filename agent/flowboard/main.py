@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from flowboard.db import get_session, init_db
 from flowboard.db.models import Request
-from flowboard.routes import media, upload
+from flowboard.routes import media, upload, vision
 from flowboard.routes import requests as requests_route
 from flowboard.services.flow_client import flow_client
 from flowboard.services.ws_server import fastapi_ext_ws, run_ws_server
@@ -86,6 +86,7 @@ app.include_router(requests_route.router)
 app.include_router(media.bytes_router)
 app.include_router(media.api_router)
 app.include_router(upload.router)
+app.include_router(vision.router)
 
 
 @app.websocket("/ws/ext")
