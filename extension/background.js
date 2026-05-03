@@ -5,8 +5,30 @@
  * Captures Bearer token and proxies API calls through the browser context.
  */
 
-const AGENT_WS_URL  = 'ws://127.0.0.1:9222';
-const CALLBACK_URL  = 'http://127.0.0.1:8100/api/ext/callback';
+const DEFAULT_BACKEND_HTTP = 'http://127.0.0.1:8100';
+const DEFAULT_BACKEND_WS   = 'ws://127.0.0.1:9222';
+
+// Resolved at connect time from chrome.storage.sync (set via popup Settings).
+let _backendHttp = DEFAULT_BACKEND_HTTP;
+let _backendWs   = DEFAULT_BACKEND_WS;
+
+function getAgentWsUrl()  { return _backendWs; }
+function getCallbackUrl() { return _backendHttp + '/api/ext/callback'; }
+
+function loadBackendUrls(cb) {
+  chrome.storage.sync.get(['backendHttp', 'backendWs'], (res) => {
+    _backendHttp = (res.backendHttp || DEFAULT_BACKEND_HTTP).replace(/\/$/, '');
+    // If user only set HTTP URL, derive WS automatically.
+    if (res.backendWs) {
+      _backendWs = res.backendWs.replace(/\/$/, '');
+    } else if (res.backendHttp) {
+      _backendWs = res.backendHttp.replace(/^http/, 'ws').replace(/\/$/, '') + '/ws/ext';
+    } else {
+      _backendWs = DEFAULT_BACKEND_WS;
+    }
+    if (cb) cb();
+  });
+}
 
 
 let ws               = null;
@@ -150,8 +172,14 @@ function connectToAgent() {
   if (ws?.readyState === WebSocket.CONNECTING) return;
   if (ws?.readyState === WebSocket.OPEN) return;
 
+  loadBackendUrls(() => {
+    _doConnect();
+  });
+}
+
+function _doConnect() {
   try {
-    ws = new WebSocket(AGENT_WS_URL);
+    ws = new WebSocket(getAgentWsUrl());
   } catch (e) {
     console.error('[Flowboard] WS connect error:', e);
     scheduleReconnect();
@@ -274,7 +302,7 @@ function keepAlive() {
  */
 function sendToAgent(msg) {
   if (msg.id) {
-    fetch(CALLBACK_URL, {
+    fetch(getCallbackUrl(), {
       method:  'POST',
       headers: {
         'Content-Type':      'application/json',

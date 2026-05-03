@@ -131,6 +131,44 @@
 
     button.success { background: transparent; color: #6ee7b7; border: none; }
     button.success:hover { background: #101e14; color: #a7f3d0; }
+
+    /* ── Settings ── */
+    .settings {
+      padding: 8px 14px 12px;
+      border-top: 1px solid #242320;
+    }
+
+    .settings-row {
+      display: flex;
+      gap: 6px;
+    }
+
+    .settings-row input {
+      flex: 1;
+      padding: 6px 8px;
+      background: #111110;
+      border: 1px solid #3a3830;
+      border-radius: 6px;
+      color: #b8b3aa;
+      font-size: 11px;
+      font-family: monospace;
+      outline: none;
+    }
+
+    .settings-row input:focus { border-color: #6a6660; }
+
+    .settings-row button {
+      width: auto;
+      padding: 6px 10px;
+      font-size: 11px;
+    }
+
+    .settings-hint {
+      margin-top: 4px;
+      font-size: 10px;
+      color: #5a5750;
+      min-height: 14px;
+    }
   </style>
 </head>
 <body>
@@ -170,6 +208,14 @@
     <button class="primary" id="btn-flow-tab">Open Google Flow</button>
     <button id="btn-refresh">Refresh Token</button>
     <button id="btn-toggle" class="danger">Disconnect</button>
+  </div>
+
+  <div class="settings" id="settings-section">
+    <div class="settings-row">
+      <input type="text" id="input-backend-url" placeholder="http://127.0.0.1:8100" spellcheck="false">
+      <button id="btn-save-url">Save</button>
+    </div>
+    <div class="settings-hint" id="settings-hint"></div>
   </div>
 
   <script src="popup.js"></script>

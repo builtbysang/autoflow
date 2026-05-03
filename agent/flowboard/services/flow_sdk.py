@@ -38,7 +38,7 @@ IMAGE_MODELS: dict[str, str] = {
     "NANO_BANANA_PRO": "GEM_PIX_2",
     "NANO_BANANA_2": "NARWHAL",
 }
-DEFAULT_IMAGE_MODEL_KEY = "NANO_BANANA_PRO"
+DEFAULT_IMAGE_MODEL_KEY = "NANO_BANANA_2"
 
 
 def resolve_image_model(key: Optional[str]) -> str:

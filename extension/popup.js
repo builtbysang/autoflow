@@ -111,3 +111,36 @@ document.getElementById('btn-toggle').addEventListener('click', () => {
     fetchStatus();
   });
 });
+
+// ── Backend URL settings ──────────────────────────────────────
+
+const inputUrl  = document.getElementById('input-backend-url');
+const btnSave   = document.getElementById('btn-save-url');
+const hint      = document.getElementById('settings-hint');
+
+// Load saved URL on open
+chrome.storage.sync.get(['backendHttp'], (res) => {
+  if (res.backendHttp) inputUrl.value = res.backendHttp;
+});
+
+btnSave.addEventListener('click', () => {
+  const val = inputUrl.value.trim().replace(/\/$/, '');
+  if (!val) {
+    // Reset to local default
+    chrome.storage.sync.remove(['backendHttp', 'backendWs'], () => {
+      hint.textContent = 'Reset to localhost';
+      setTimeout(() => { hint.textContent = ''; }, 2000);
+      chrome.runtime.sendMessage({ type: 'RECONNECT' });
+    });
+    return;
+  }
+  if (!val.startsWith('http://') && !val.startsWith('https://')) {
+    hint.textContent = 'Must start with http:// or https://';
+    return;
+  }
+  chrome.storage.sync.set({ backendHttp: val }, () => {
+    hint.textContent = 'Saved — reconnecting…';
+    setTimeout(() => { hint.textContent = ''; }, 2000);
+    chrome.runtime.sendMessage({ type: 'RECONNECT' });
+  });
+});

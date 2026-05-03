@@ -5,6 +5,9 @@ ROOT = Path(__file__).resolve().parent.parent.parent
 STORAGE_DIR = Path(os.getenv("FLOWBOARD_STORAGE", ROOT / "storage"))
 DB_PATH = Path(os.getenv("FLOWBOARD_DB", STORAGE_DIR / "flowboard.db"))
 
+# Postgres connection string — set this on Railway, leave unset for local SQLite.
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 HTTP_PORT = int(os.getenv("FLOWBOARD_HTTP_PORT", "8100"))
 WS_HOST = os.getenv("FLOWBOARD_WS_HOST", "127.0.0.1")
 EXTENSION_WS_PORT = int(os.getenv("FLOWBOARD_EXT_WS_PORT", "9222"))

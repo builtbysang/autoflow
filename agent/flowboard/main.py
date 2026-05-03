@@ -3,37 +3,28 @@ from __future__ import annotations
 import asyncio
 import hmac
 import logging
+import os
 from contextlib import asynccontextmanager
 from typing import Optional
 
-from fastapi import FastAPI, HTTPException, Header, Request as FastAPIRequest
+from fastapi import FastAPI, HTTPException, Header, Request as FastAPIRequest, WebSocket
 from fastapi.middleware.cors import CORSMiddleware
 
-from flowboard.config import WS_HOST
 from flowboard.db import get_session, init_db
 from flowboard.db.models import Request
 from flowboard.routes import boards, edges, media, nodes, projects, prompt, upload, vision
 from flowboard.routes import requests as requests_route
 from flowboard.services.flow_client import flow_client
-from flowboard.services.ws_server import run_ws_server
-from flowboard.worker.processor import get_worker
-
-# Guard rail: the dedicated WS server is unauthenticated and would expose the
-# callback secret to any process that can reach it. Refuse to boot if someone
-# overrode WS_HOST to a non-loopback address.
-if WS_HOST not in ("127.0.0.1", "localhost", "::1"):
-    raise RuntimeError(
-        f"FLOWBOARD_WS_HOST must be loopback (got {WS_HOST!r}); the extension WS "
-        "is unauthenticated by design and must not be network-reachable."
-    )
+from flowboard.services.ws_server import fastapi_ext_ws, run_ws_server
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
+# True when running on Railway (or any cloud env that sets DATABASE_URL).
+_CLOUD = bool(os.getenv("DATABASE_URL") or os.getenv("RAILWAY_ENVIRONMENT"))
+
 
 def _recover_orphan_running_requests() -> int:
-    """Mark any pre-existing 'running' requests as failed so a restart doesn't
-    leave nodes polling a request that nobody is processing anymore."""
     from datetime import datetime, timezone
     from sqlmodel import select as _select
 
@@ -57,10 +48,17 @@ async def lifespan(app: FastAPI):
     recovered = _recover_orphan_running_requests()
     if recovered:
         logger.info("recovered %d orphan running request(s) → failed", recovered)
+
+    from flowboard.worker.processor import get_worker
     worker = get_worker()
-    ws_task = asyncio.create_task(run_ws_server(), name="ext-ws-server")
-    worker_task = asyncio.create_task(worker.start(), name="request-worker")
-    logger.info("flowboard agent started (ws:9222 + worker)")
+    tasks = [asyncio.create_task(worker.start(), name="request-worker")]
+
+    if _CLOUD:
+        logger.info("cloud mode — extension WS served at /ws/ext")
+    else:
+        tasks.append(asyncio.create_task(run_ws_server(), name="ext-ws-server"))
+        logger.info("local mode — extension WS on :9222 + worker")
+
     try:
         yield
     finally:
@@ -69,9 +67,9 @@ async def lifespan(app: FastAPI):
             await asyncio.wait_for(worker.drain(), timeout=5.0)
         except asyncio.TimeoutError:
             logger.warning("worker drain timed out")
-        for t in (ws_task, worker_task):
+        for t in tasks:
             t.cancel()
-        await asyncio.gather(ws_task, worker_task, return_exceptions=True)
+        await asyncio.gather(*tasks, return_exceptions=True)
         logger.info("flowboard agent stopped")
 
 
@@ -97,6 +95,12 @@ app.include_router(vision.router)
 app.include_router(prompt.router)
 
 
+@app.websocket("/ws/ext")
+async def ext_ws(websocket: WebSocket):
+    """Extension WebSocket endpoint — used in cloud mode (Railway)."""
+    await fastapi_ext_ws(websocket)
+
+
 @app.get("/api/health")
 def health() -> dict:
     return {
@@ -111,7 +115,6 @@ async def ext_callback(
     body: FastAPIRequest,
     x_callback_secret: Optional[str] = Header(default=None, alias="X-Callback-Secret"),
 ) -> dict:
-    """HTTP callback for the extension to deliver API responses."""
     if not x_callback_secret or not hmac.compare_digest(
         x_callback_secret, flow_client.callback_secret
     ):

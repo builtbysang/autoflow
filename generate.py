@@ -86,6 +86,9 @@ def main():
     parser.add_argument("--tier", default=cfg.get("default_tier", "PAYGATE_TIER_ONE"),
                         choices=["PAYGATE_TIER_ONE", "PAYGATE_TIER_TWO"],
                         help="Flow tier: ONE=Pro, TWO=Ultra")
+    parser.add_argument("--model", default=cfg.get("default_model", "NANO_BANANA_2"),
+                        choices=["NANO_BANANA_PRO", "NANO_BANANA_2"],
+                        help="Image model: NANO_BANANA_2 (default) or NANO_BANANA_PRO")
     parser.add_argument("--project", default=None, help="Google Flow project name (default: output folder name)")
     parser.add_argument("--out", default=None,
                         help="Output folder (default: config default_out or ~/Pictures/autoflow)")
@@ -148,6 +151,7 @@ def main():
             "project_id": project_id,
             "aspect_ratio": aspect_map[args.aspect],
             "paygate_tier": args.tier,
+            "image_model": args.model,
         }
     })
     result = poll(req["id"])
